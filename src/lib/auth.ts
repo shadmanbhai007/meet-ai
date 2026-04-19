@@ -3,6 +3,10 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { db } from "@/db";
 import * as schema from "@/db/schema";
 export const auth = betterAuth({
+    trustedOrigins: [
+        "http://localhost:3000",
+        "https://ground-poncho-battle.ngrok-free.dev",
+    ],
     socialProviders: {
         github: { 
             clientId: process.env.GITHUB_CLIENT_ID as string, 
