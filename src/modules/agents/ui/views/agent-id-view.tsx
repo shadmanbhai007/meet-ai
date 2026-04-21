@@ -29,27 +29,30 @@ export const AgentIdView = ({ agentId }: Props) => {
   const [updateAgentDialogOpen, setUpdateAgentDialogOpen] = useState(false);
 
   const { data } = useSuspenseQuery(
-    trpc.agents.getOne.queryOptions({ id: agentId })
+    trpc.agents.getOne.queryOptions({ id: agentId }),
   );
 
   const removeAgent = useMutation(
     trpc.agents.remove.mutationOptions({
       onSuccess: async () => {
         await queryClient.invalidateQueries(
-          trpc.agents.getMany.queryOptions({})
+          trpc.agents.getMany.queryOptions({}),
         );
-        // TODO: Invalidate free tier usage
+
+        await queryClient.invalidateQueries(
+          trpc.premium.getFreeUsage.queryOptions(),
+        );
         router.push("/agents");
       },
       onError: (error) => {
         toast.error(`Error removing agent: ${error.message}`);
       },
-    })
+    }),
   );
 
   const [RemoveConfirmation, confirmRemove] = useConfirm(
     "Are you sure?",
-    `The following action will remove ${data.meetingCount} associated meetings`
+    `The following action will remove ${data.meetingCount} associated meetings`,
   );
 
   const handleRemoveAgent = async () => {
