@@ -1,10 +1,10 @@
+import { useRouter } from "next/navigation";
+import { ChevronDownIcon, CreditCardIcon, LogOutIcon } from "lucide-react";
+
 import { authClient } from "@/lib/auth-client";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { GeneratedAvatar } from "@/components/generated-avatar";
-import { ChevronDownIcon } from "lucide-react";
-import { CreditCardIcon, LogOutIcon } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,7 +22,8 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer";
-import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+
 export const DashboardUserButton = () => {
   const router = useRouter();
   const isMobile = useIsMobile();
@@ -37,9 +38,11 @@ export const DashboardUserButton = () => {
       },
     });
   };
+
   if (isPending || !data?.user) {
     return null;
   }
+
   if (isMobile) {
     return (
       <Drawer>
@@ -67,7 +70,10 @@ export const DashboardUserButton = () => {
             <DrawerDescription>{data.user.email}</DrawerDescription>
           </DrawerHeader>
           <DrawerFooter>
-            <Button variant="outline" onClick={() => {}}>
+            <Button
+              variant="outline"
+              onClick={() => authClient.customer.portal()}
+            >
               <CreditCardIcon className="size-4 text-black" />
               Billing
             </Button>
@@ -80,6 +86,7 @@ export const DashboardUserButton = () => {
       </Drawer>
     );
   }
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger className="rounded-lg border border-border/10 p-3 w-full flex items-center justify-between bg-white/5 hover:bg-white/10 overflow-hidden gap-x-2">
@@ -110,13 +117,16 @@ export const DashboardUserButton = () => {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem className="cursor-pointer flex items-center justify-between">
+        <DropdownMenuItem
+          onClick={() => authClient.customer.portal()}
+          className="cursor-pointer flex items-center justify-between"
+        >
           Billing
           <CreditCardIcon className="size-4" />
         </DropdownMenuItem>
         <DropdownMenuItem
-          className="cursor-pointer flex items-center justify-between"
           onClick={onLogout}
+          className="cursor-pointer flex items-center justify-between"
         >
           Logout
           <LogOutIcon className="size-4" />

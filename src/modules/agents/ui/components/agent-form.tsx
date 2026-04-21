@@ -16,14 +16,15 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { AgentGetOne } from "@/modules/agents/types";
+import { AgentsGetOne } from "@/modules/agents/types";
 import { useForm } from "react-hook-form";
 import { agentsInsertSchema } from "@/modules/agents/schema";
+import { useRouter } from "next/navigation";
 
 interface AgentFormProps {
   onSuccess?: () => void;
   onCancel?: () => void;
-  initialValues?: AgentGetOne;
+  initialValues?: AgentsGetOne;
 }
 
 export const AgentForm = ({
@@ -32,34 +33,40 @@ export const AgentForm = ({
   initialValues,
 }: AgentFormProps) => {
   const trpc = useTRPC();
+  const router = useRouter();
   const queryClient = useQueryClient();
 
   const createAgent = useMutation(
     trpc.agents.create.mutationOptions({
       onSuccess: async () => {
         await queryClient.invalidateQueries(
-          trpc.agents.getMany.queryOptions({})
+          trpc.agents.getMany.queryOptions({}),
         );
-        //TODO: Invalidate free tier usage
+        await queryClient.invalidateQueries(
+          trpc.premium.getFreeUsage.queryOptions(),
+        );
+
         onSuccess?.();
       },
       onError: (error) => {
         toast.error(error.message);
 
-        //TODO: check if error code is "FORBIDDEN", redirect to "/upgrade"
+        if (error.data?.code === "FORBIDDEN") {
+          router.push("/upgrade");
+        }
       },
-    })
+    }),
   );
   const updateAgent = useMutation(
     trpc.agents.update.mutationOptions({
       onSuccess: async () => {
         await queryClient.invalidateQueries(
-          trpc.agents.getMany.queryOptions({})
+          trpc.agents.getMany.queryOptions({}),
         );
 
         if (initialValues?.id) {
           await queryClient.invalidateQueries(
-            trpc.agents.getOne.queryOptions({ id: initialValues.id })
+            trpc.agents.getOne.queryOptions({ id: initialValues.id }),
           );
         }
         onSuccess?.();
@@ -69,7 +76,7 @@ export const AgentForm = ({
 
         //TODO: check if error code is "FORBIDDEN", redirect to "/upgrade"
       },
-    })
+    }),
   );
   const form = useForm<z.infer<typeof agentsInsertSchema>>({
     resolver: zodResolver(agentsInsertSchema),

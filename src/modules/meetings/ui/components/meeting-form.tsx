@@ -22,6 +22,7 @@ import type { z } from "zod";
 import { meetingsInsertSchema } from "../../schema";
 import { MeetingGetOne } from "../../types";
 import { NewAgentDialog } from "@/modules/agents/ui/components/new-agent-dialog";
+import { useRouter } from "next/navigation";
 
 interface MeetingFormProps {
   onSuccess?: (id?: string) => void;
@@ -35,6 +36,7 @@ export const MeetingForm = ({
   initialValues,
 }: MeetingFormProps) => {
   const trpc = useTRPC();
+  const router = useRouter();
   const queryClient = useQueryClient();
   const firstInputRef = useRef<HTMLInputElement>(null);
 
@@ -44,34 +46,38 @@ export const MeetingForm = ({
     trpc.agents.getMany.queryOptions({
       pageSize: 100,
       search: agentSearch,
-    })
+    }),
   );
   const createMeeting = useMutation(
     trpc.meetings.create.mutationOptions({
       onSuccess: async (data) => {
         await queryClient.invalidateQueries(
-          trpc.meetings.getMany.queryOptions({})
+          trpc.meetings.getMany.queryOptions({}),
         );
-        // TODO: Invalidate free tier usage
+        await queryClient.invalidateQueries(
+          trpc.premium.getFreeUsage.queryOptions(),
+        );
         onSuccess?.(data.id);
       },
       onError: (error) => {
         toast.error(`Error creating meeting: ${error.message}`);
-        // TODO: Check if error code is 'CONFLICT' and show a specific message
+        if (error.data?.code === "FORBIDDEN") {
+          router.push("/upgrade");
+        }
       },
-    })
+    }),
   );
 
   const updateMeeting = useMutation(
     trpc.meetings.update.mutationOptions({
       onSuccess: async () => {
         await queryClient.invalidateQueries(
-          trpc.meetings.getMany.queryOptions({})
+          trpc.meetings.getMany.queryOptions({}),
         );
 
         if (initialValues?.id) {
           await queryClient.invalidateQueries(
-            trpc.meetings.getOne.queryOptions({ id: initialValues.id })
+            trpc.meetings.getOne.queryOptions({ id: initialValues.id }),
           );
         }
 
@@ -79,10 +85,8 @@ export const MeetingForm = ({
       },
       onError: (error) => {
         toast.error(`Error updating agent: ${error.message}`);
-        // TODO: Check if error code is 'CONFLICT' and show a specific message
-        // TODO: Check if error code is FORBIDDEN, redirect to "/upgrade"
       },
-    })
+    }),
   );
 
   const form = useForm<z.infer<typeof meetingsInsertSchema>>({

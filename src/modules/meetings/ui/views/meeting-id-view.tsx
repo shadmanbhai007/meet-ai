@@ -15,7 +15,7 @@ import { useState } from "react";
 import { UpdateMeetingDialog } from "../components/update-meeting-dialog";
 import { UpcomingState } from "../components/upcoming-state";
 import { ActiveState } from "../components/active-state.tsx";
-import { CancelledState } from "../components/cancelled-state.tsx";
+import { CancelledState } from "../components/cancelled-state";
 import { ProcessingState } from "../components/processing-state";
 import { CompletedState } from "../components/completed-state";
 
@@ -40,9 +40,11 @@ export const MeetingIdView = ({ meetingId }: Props) => {
 
   const removeMeeting = useMutation(
     trpc.meetings.remove.mutationOptions({
-      onSuccess: () => {
+      onSuccess: async () => {
         queryClient.invalidateQueries(trpc.meetings.getMany.queryOptions({}));
-        // TODO: Invalidate free tier usage
+        await queryClient.invalidateQueries(
+          trpc.premium.getFreeUsage.queryOptions(),
+        );
         router.push("/meetings");
       },
     }),
